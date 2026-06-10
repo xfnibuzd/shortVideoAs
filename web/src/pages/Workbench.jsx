@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Plus, FileText, Images } from 'lucide-react';
+import { ChevronLeft, Plus, FileText, Images, BookText } from 'lucide-react';
 import { api } from '../api.js';
 import ChapterTree from '../components/ChapterTree.jsx';
 import ScriptEditor from '../components/ScriptEditor.jsx';
 import ImagePanel from '../components/ImagePanel.jsx';
 import AssetPanel from '../components/AssetPanel.jsx';
+import TemplateDialog from '../components/TemplateDialog.jsx';
 
 export default function Workbench() {
   const { projectId } = useParams();
@@ -14,6 +15,7 @@ export default function Workbench() {
   const [chapters, setChapters] = useState([]);
   const [activeShotId, setActiveShotId] = useState(null);
   const [tab, setTab] = useState('script'); // script | images
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const loadChapters = async () => {
     const data = await api.getChapters(projectId);
@@ -49,6 +51,7 @@ export default function Workbench() {
           <ChevronLeft size={16} /> 返回
         </button>
         <span className="font-medium">{project?.name}</span>
+        <div className="flex items-center gap-2">
         <div className="flex bg-neutral-900 rounded-md p-0.5 text-sm">
           <button
             onClick={() => setTab('script')}
@@ -67,7 +70,18 @@ export default function Workbench() {
             <Images size={14} /> 分镜图片
           </button>
         </div>
+        <button
+          onClick={() => setShowTemplates(true)}
+          className="flex items-center gap-1 px-3 py-1 text-sm text-neutral-300 hover:text-white border border-neutral-700 rounded-md"
+        >
+          <BookText size={14} /> 提示词模版
+        </button>
+        </div>
       </header>
+
+      {showTemplates && (
+        <TemplateDialog projectId={projectId} onClose={() => setShowTemplates(false)} />
+      )}
 
       <div className="flex flex-1 min-h-0">
         {/* 左栏 */}

@@ -1,0 +1,12 @@
+
+> short-video-web@1.0.0 dev
+> vite
+
+
+  VITE v5.4.21  ready in 123 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+16:57:29 [vite] hmr update /src/components/ImagePanel.jsx, /src/index.css
+16:57:58 [vite] hmr update /src/components/AssetPanel.jsx, /src/index.css
+16:59:51 [vite] hmr update /src/components/AssetPanel.jsx, /src/index.css

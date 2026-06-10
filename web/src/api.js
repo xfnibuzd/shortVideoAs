@@ -42,6 +42,7 @@ export const api = {
     req('GET', `/projects/${projectId}/assets${type ? `?type=${type}` : ''}`),
   createAsset: (projectId, formData) =>
     fetch(`/api/projects/${projectId}/assets`, { method: 'POST', body: formData }).then((r) => r.json()),
+  createAssetAI: (projectId, payload) => req('POST', `/projects/${projectId}/assets/ai`, payload),
   deleteAsset: (id) => req('DELETE', `/assets/${id}`),
 
   // templates

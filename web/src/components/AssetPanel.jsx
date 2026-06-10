@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, User, Image as ImageIcon, Box } from 'lucide-react';
 import { api, fileUrl } from '../api.js';
+import Lightbox from './Lightbox.jsx';
 
 const TYPES = [
   { key: 'person', label: '人物', icon: User },
@@ -12,8 +13,13 @@ export default function AssetPanel({ projectId }) {
   const [type, setType] = useState('person');
   const [assets, setAssets] = useState([]);
   const [adding, setAdding] = useState(false);
+  const [mode, setMode] = useState('upload'); // upload | ai
   const [name, setName] = useState('');
   const [file, setFile] = useState(null);
+  const [prompt, setPrompt] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState('');
+  const [preview, setPreview] = useState(null);
 
   const load = async () => setAssets(await api.listAssets(projectId, type));
 
@@ -22,17 +28,39 @@ export default function AssetPanel({ projectId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, type]);
 
-  const add = async () => {
-    if (!name.trim()) return;
-    const fd = new FormData();
-    fd.append('name', name.trim());
-    fd.append('type', type);
-    if (file) fd.append('image', file);
-    await api.createAsset(projectId, fd);
+  const reset = () => {
     setAdding(false);
     setName('');
     setFile(null);
-    load();
+    setPrompt('');
+    setError('');
+    setGenerating(false);
+  };
+
+  const add = async () => {
+    if (!name.trim()) return;
+    setError('');
+    try {
+      if (mode === 'ai') {
+        if (!prompt.trim()) {
+          setError('请填写提示词');
+          return;
+        }
+        setGenerating(true);
+        await api.createAssetAI(projectId, { name: name.trim(), type, prompt: prompt.trim() });
+      } else {
+        const fd = new FormData();
+        fd.append('name', name.trim());
+        fd.append('type', type);
+        if (file) fd.append('image', file);
+        await api.createAsset(projectId, fd);
+      }
+      reset();
+      load();
+    } catch (e) {
+      setError(e.message || 'AI 生成失败');
+      setGenerating(false);
+    }
   };
 
   const del = async (id) => {
@@ -62,7 +90,12 @@ export default function AssetPanel({ projectId }) {
           <div key={a.id} className="group relative rounded bg-neutral-900 border border-neutral-800 overflow-hidden">
             <div className="aspect-square bg-neutral-800 flex items-center justify-center">
               {a.image_path ? (
-                <img src={fileUrl(a.image_path)} alt={a.name} className="w-full h-full object-cover" />
+                <img
+                  src={fileUrl(a.image_path)}
+                  alt={a.name}
+                  onClick={() => setPreview(fileUrl(a.image_path))}
+                  className="w-full h-full object-cover cursor-zoom-in hover:opacity-90"
+                />
               ) : (
                 <span className="text-neutral-600 text-xs">无图</span>
               )}
@@ -80,23 +113,52 @@ export default function AssetPanel({ projectId }) {
 
       {adding ? (
         <div className="mt-3 p-2 bg-neutral-900 rounded border border-neutral-800">
+          <div className="flex gap-1 mb-2 bg-neutral-800 rounded p-0.5 text-xs">
+            <button
+              onClick={() => setMode('upload')}
+              className={`flex-1 py-1 rounded ${mode === 'upload' ? 'bg-neutral-600 text-white' : 'text-neutral-400'}`}
+            >
+              本地上传
+            </button>
+            <button
+              onClick={() => setMode('ai')}
+              className={`flex-1 py-1 rounded ${mode === 'ai' ? 'bg-neutral-600 text-white' : 'text-neutral-400'}`}
+            >
+              AI 生成
+            </button>
+          </div>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="资产名称"
             className="w-full mb-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-sm outline-none"
           />
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="w-full mb-2 text-xs text-neutral-400"
-          />
+          {mode === 'upload' ? (
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="w-full mb-2 text-xs text-neutral-400"
+            />
+          ) : (
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="描述要生成的形象，可含风格/尺寸约束…"
+              rows={3}
+              className="w-full mb-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-sm outline-none resize-none"
+            />
+          )}
+          {error && <p className="text-xs text-red-400 mb-2">{error}</p>}
           <div className="flex gap-2">
-            <button onClick={add} className="flex-1 bg-brand text-black rounded py-1 text-sm font-medium">
-              保存
+            <button
+              onClick={add}
+              disabled={generating}
+              className="flex-1 bg-brand text-black rounded py-1 text-sm font-medium disabled:opacity-50"
+            >
+              {generating ? '生成中…' : mode === 'ai' ? 'AI 生成并保存' : '保存'}
             </button>
-            <button onClick={() => setAdding(false)} className="flex-1 bg-neutral-800 rounded py-1 text-sm">
+            <button onClick={reset} disabled={generating} className="flex-1 bg-neutral-800 rounded py-1 text-sm disabled:opacity-50">
               取消
             </button>
           </div>
@@ -109,6 +171,8 @@ export default function AssetPanel({ projectId }) {
           <Plus size={14} /> 新增{TYPES.find((t) => t.key === type).label}
         </button>
       )}
+
+      <Lightbox src={preview} onClose={() => setPreview(null)} />
     </div>
   );
 }

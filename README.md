@@ -25,8 +25,13 @@ npm start              # 或 npm run dev (watch)
 ```
 
 `.env` 关键项：
-- `GOOGLE_API_KEY` / `GEMINI_API_KEY`：谷歌生图密钥
-- `AI_MOCK_FALLBACK=true`：无 Key 或调用失败时回退占位图，便于本地开发
+- `AI_PROVIDER`：生图服务商，`gemini`（默认）或 `doubao`
+- Gemini：`GOOGLE_API_KEY` / `GEMINI_API_KEY` + `GEMINI_IMAGE_MODEL`
+- 豆包(火山方舟)：`ARK_API_KEY` + `DOUBAO_IMAGE_MODEL`（可选 `ARK_BASE_URL`、`DOUBAO_IMAGE_SIZE`）
+- `HTTPS_PROXY`：仅 Gemini 需要时填写（被墙环境）；`AI_PROVIDER=doubao` 时自动忽略
+- 未配置 Key 或生成失败时直接报错，不回退占位图
+
+切换豆包示例：在 `.env` 设 `AI_PROVIDER=doubao` 与 `ARK_API_KEY=xxx`，然后 `./restart.sh server`。
 
 ### 2. 前端（端口 5173）
 ```bash

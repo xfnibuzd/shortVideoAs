@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Plus, RefreshCw, Loader2 } from 'lucide-react';
 import { api, fileUrl } from '../api.js';
 import GenerateDialog from './GenerateDialog.jsx';
+import Lightbox from './Lightbox.jsx';
 
 const STATUS_TEXT = {
   queued: '排队中',
@@ -13,6 +14,7 @@ const STATUS_TEXT = {
 export default function ImagePanel({ projectId, shotId }) {
   const [generations, setGenerations] = useState([]);
   const [showDialog, setShowDialog] = useState(false);
+  const [preview, setPreview] = useState(null);
   const pollRef = useRef(null);
 
   const load = async () => {
@@ -117,7 +119,8 @@ export default function ImagePanel({ projectId, shotId }) {
                       key={img.id}
                       src={fileUrl(img.image_path)}
                       alt=""
-                      className="w-full aspect-square object-cover rounded bg-neutral-800"
+                      onClick={() => setPreview(fileUrl(img.image_path))}
+                      className="w-full aspect-square object-cover rounded bg-neutral-800 cursor-zoom-in hover:opacity-90"
                     />
                   ))}
                 </div>
@@ -126,6 +129,8 @@ export default function ImagePanel({ projectId, shotId }) {
           ))}
         </div>
       )}
+
+      <Lightbox src={preview} onClose={() => setPreview(null)} />
 
       {showDialog && (
         <GenerateDialog
