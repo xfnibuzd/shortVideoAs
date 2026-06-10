@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Plus, FileText, Images, BookText } from 'lucide-react';
+import { ChevronLeft, FileText, Images, BookText, Upload } from 'lucide-react';
 import { api } from '../api.js';
 import ChapterTree from '../components/ChapterTree.jsx';
 import ScriptEditor from '../components/ScriptEditor.jsx';
@@ -16,6 +16,8 @@ export default function Workbench() {
   const [activeShotId, setActiveShotId] = useState(null);
   const [tab, setTab] = useState('script'); // script | images
   const [showTemplates, setShowTemplates] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef(null);
 
   const loadChapters = async () => {
     const data = await api.getChapters(projectId);
@@ -36,6 +38,31 @@ export default function Workbench() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!fileInputRef.current) return;
+    fileInputRef.current.value = '';
+    if (!file) return;
+    if (!file.name.endsWith('.docx')) {
+      alert('请选择 .docx 格式的 Word 文件');
+      return;
+    }
+    if (!confirm(`导入「${file.name}」将覆盖当前所有章节和分镜，确定继续？`)) return;
+    setImporting(true);
+    try {
+      const res = await api.importScript(projectId, file);
+      setActiveShotId(null);
+      const data = await loadChapters();
+      const firstShot = data.find((c) => c.shots.length)?.shots[0];
+      if (firstShot) setActiveShotId(firstShot.id);
+      alert(`导入成功：${res.chapters} 集 / ${res.shots} 个分镜`);
+    } catch (err) {
+      alert(`导入失败: ${err.message}`);
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const activeShot =
     chapters.flatMap((c) => c.shots).find((s) => s.id === activeShotId) || null;
@@ -76,6 +103,20 @@ export default function Workbench() {
         >
           <BookText size={14} /> 提示词模版
         </button>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={importing}
+          className="flex items-center gap-1 px-3 py-1 text-sm text-neutral-300 hover:text-white border border-neutral-700 rounded-md disabled:opacity-40"
+        >
+          <Upload size={14} /> {importing ? '导入中…' : '导入剧本'}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".docx"
+          className="hidden"
+          onChange={handleImport}
+        />
         </div>
       </header>
 

@@ -10,3 +10,5 @@
 16:57:29 [vite] hmr update /src/components/ImagePanel.jsx, /src/index.css
 16:57:58 [vite] hmr update /src/components/AssetPanel.jsx, /src/index.css
 16:59:51 [vite] hmr update /src/components/AssetPanel.jsx, /src/index.css
+15:11:48 [vite] hmr update /src/pages/Workbench.jsx, /src/index.css, /src/pages/ProjectList.jsx, /src/components/ScriptEditor.jsx, /src/components/ChapterTree.jsx, /src/components/ImagePanel.jsx, /src/components/TemplateDialog.jsx, /src/components/AssetPanel.jsx, /src/components/GenerateDialog.jsx
+15:12:09 [vite] hmr update /src/pages/Workbench.jsx, /src/index.css

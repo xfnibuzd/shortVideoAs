@@ -14,6 +14,7 @@ import shotRoutes from './routes/shots.js';
 import assetRoutes from './routes/assets.js';
 import templateRoutes from './routes/templates.js';
 import generationRoutes from './routes/generations.js';
+import importScriptRoutes from './routes/importScript.js';
 
 ensureDirs();
 
@@ -37,6 +38,7 @@ await app.register(shotRoutes);
 await app.register(assetRoutes);
 await app.register(templateRoutes);
 await app.register(generationRoutes);
+await app.register(importScriptRoutes);
 
 const port = Number(process.env.PORT || 3000);
 try {

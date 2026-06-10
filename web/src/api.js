@@ -45,6 +45,19 @@ export const api = {
   createAssetAI: (projectId, payload) => req('POST', `/projects/${projectId}/assets/ai`, payload),
   deleteAsset: (id) => req('DELETE', `/assets/${id}`),
 
+  // import script
+  importScript: (projectId, file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return fetch(`/api/projects/${projectId}/import-script`, { method: 'POST', body: fd }).then(
+      async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw Object.assign(new Error(json.message || '导入失败'), json);
+        return json;
+      }
+    );
+  },
+
   // templates
   listTemplates: (projectId) => req('GET', `/projects/${projectId}/prompt-templates`),
   createTemplate: (projectId, name, content) =>
