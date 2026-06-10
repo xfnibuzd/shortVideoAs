@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, RefreshCw, Loader2 } from 'lucide-react';
+import { Plus, RefreshCw, Loader2, LayoutGrid, ZoomIn, Trash2 } from 'lucide-react';
 import { api, fileUrl } from '../api.js';
 import GenerateDialog from './GenerateDialog.jsx';
 import Lightbox from './Lightbox.jsx';
+import NineGridDialog from './NineGridDialog.jsx';
 
 const STATUS_TEXT = {
   queued: '排队中',
@@ -15,6 +16,19 @@ export default function ImagePanel({ projectId, shotId }) {
   const [generations, setGenerations] = useState([]);
   const [showDialog, setShowDialog] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [sliceSrc, setSliceSrc] = useState(null);
+
+  const deleteImage = async (imgId) => {
+    if (!confirm('删除这张图片？')) return;
+    await api.deleteGenerationImage(imgId);
+    load();
+  };
+
+  const deleteGeneration = async (genId) => {
+    if (!confirm('删除整组图片？')) return;
+    await api.deleteGeneration(genId);
+    load();
+  };
   const pollRef = useRef(null);
 
   const load = async () => {
@@ -110,19 +124,53 @@ export default function ImagePanel({ projectId, shotId }) {
                     <RefreshCw size={12} /> 重试
                   </button>
                 )}
+                <button
+                  onClick={() => deleteGeneration(g.id)}
+                  title="删除整组"
+                  className="p-0.5 text-neutral-600 hover:text-red-400"
+                >
+                  <Trash2 size={13} />
+                </button>
               </div>
               {g.error && <p className="text-xs text-red-400 mb-2">{g.error}</p>}
               {g.images?.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
-                  {g.images.map((img) => (
-                    <img
-                      key={img.id}
-                      src={fileUrl(img.image_path)}
-                      alt=""
-                      onClick={() => setPreview(fileUrl(img.image_path))}
-                      className="w-full aspect-square object-cover rounded bg-neutral-800 cursor-zoom-in hover:opacity-90"
-                    />
-                  ))}
+                  {g.images.map((img) => {
+                    const url = fileUrl(img.image_path);
+                    return (
+                      <div key={img.id} className="group relative">
+                        <img
+                          src={url}
+                          alt=""
+                          onClick={() => setPreview(url)}
+                          className="w-full aspect-square object-cover rounded bg-neutral-800 cursor-zoom-in"
+                        />
+                        <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                          <button
+                            onClick={() => setPreview(url)}
+                            title="放大查看"
+                            className="bg-black/70 hover:bg-black/90 p-1 rounded"
+                          >
+                            <ZoomIn size={13} />
+                          </button>
+                          <button
+                            onClick={() => setSliceSrc(url)}
+                            title="九宫格切割"
+                            className="bg-black/70 hover:bg-black/90 p-1 rounded"
+                          >
+                            <LayoutGrid size={13} />
+                          </button>
+                          <button
+                            onClick={() => deleteImage(img.id)}
+                            title="删除"
+                            className="bg-black/70 hover:bg-red-600 p-1 rounded"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -131,6 +179,14 @@ export default function ImagePanel({ projectId, shotId }) {
       )}
 
       <Lightbox src={preview} onClose={() => setPreview(null)} />
+      {sliceSrc && (
+        <NineGridDialog
+          src={sliceSrc}
+          shotId={shotId}
+          onClose={() => setSliceSrc(null)}
+          onSaved={load}
+        />
+      )}
 
       {showDialog && (
         <GenerateDialog

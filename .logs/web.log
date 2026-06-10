@@ -12,3 +12,9 @@
 16:59:51 [vite] hmr update /src/components/AssetPanel.jsx, /src/index.css
 15:11:48 [vite] hmr update /src/pages/Workbench.jsx, /src/index.css, /src/pages/ProjectList.jsx, /src/components/ScriptEditor.jsx, /src/components/ChapterTree.jsx, /src/components/ImagePanel.jsx, /src/components/TemplateDialog.jsx, /src/components/AssetPanel.jsx, /src/components/GenerateDialog.jsx
 15:12:09 [vite] hmr update /src/pages/Workbench.jsx, /src/index.css
+15:20:25 [vite] hmr update /src/components/ImagePanel.jsx, /src/index.css
+15:24:34 [vite] hmr update /src/pages/Workbench.jsx, /src/index.css, /src/pages/ProjectList.jsx, /src/components/ScriptEditor.jsx, /src/components/ChapterTree.jsx, /src/components/ImagePanel.jsx, /src/components/TemplateDialog.jsx, /src/components/AssetPanel.jsx, /src/components/GenerateDialog.jsx
+15:25:14 [vite] hmr update /src/components/NineGridDialog.jsx, /src/index.css
+15:25:23 [vite] hmr update /src/components/ImagePanel.jsx, /src/index.css
+15:28:56 [vite] hmr update /src/pages/Workbench.jsx, /src/index.css, /src/pages/ProjectList.jsx, /src/components/ScriptEditor.jsx, /src/components/ChapterTree.jsx, /src/components/ImagePanel.jsx, /src/components/TemplateDialog.jsx, /src/components/AssetPanel.jsx, /src/components/GenerateDialog.jsx, /src/components/NineGridDialog.jsx
+15:29:21 [vite] hmr update /src/components/ImagePanel.jsx, /src/index.css

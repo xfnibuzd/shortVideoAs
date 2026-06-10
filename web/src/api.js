@@ -45,6 +45,10 @@ export const api = {
   createAssetAI: (projectId, payload) => req('POST', `/projects/${projectId}/assets/ai`, payload),
   deleteAsset: (id) => req('DELETE', `/assets/${id}`),
 
+  // save sliced images to shot
+  saveSlicesToShot: (shotId, label, dataUrls) =>
+    req('POST', `/shots/${shotId}/upload-images`, { label, images: dataUrls }),
+
   // import script
   importScript: (projectId, file) => {
     const fd = new FormData();
@@ -66,6 +70,8 @@ export const api = {
 
   // generations
   listGenerations: (shotId) => req('GET', `/shots/${shotId}/generations`),
+  deleteGeneration: (id) => req('DELETE', `/generations/${id}`),
+  deleteGenerationImage: (id) => req('DELETE', `/generation-images/${id}`),
   createGeneration: (shotId, assetIds, templateId) =>
     req('POST', `/shots/${shotId}/generations`, { assetIds, templateId }),
   getGeneration: (id) => req('GET', `/generations/${id}`),

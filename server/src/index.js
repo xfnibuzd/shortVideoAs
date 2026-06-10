@@ -18,7 +18,7 @@ import importScriptRoutes from './routes/importScript.js';
 
 ensureDirs();
 
-const app = Fastify({ logger: true });
+const app = Fastify({ logger: true, bodyLimit: 50 * 1024 * 1024 });
 
 await app.register(cors, { origin: true });
 await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } });

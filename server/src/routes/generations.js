@@ -1,4 +1,5 @@
 import { db } from '../db.js';
+import { deleteFileSafe } from '../storage.js';
 import {
   createGeneration,
   retryGeneration,
@@ -64,5 +65,32 @@ export default async function generationRoutes(fastify) {
       }
       throw e;
     }
+  });
+
+  // 删除整个 generation（含所有图片文件）
+  fastify.delete('/generations/:id', async (req, reply) => {
+    const imgs = db
+      .prepare('SELECT image_path FROM generation_images WHERE generation_id=?')
+      .all(req.params.id);
+    imgs.forEach((r) => deleteFileSafe(r.image_path));
+    db.prepare('DELETE FROM generations WHERE id=?').run(req.params.id);
+    return { ok: true };
+  });
+
+  // 删除单张图片；若 generation 已无图片则一并删除 generation
+  fastify.delete('/generation-images/:id', async (req, reply) => {
+    const img = db
+      .prepare('SELECT * FROM generation_images WHERE id=?')
+      .get(req.params.id);
+    if (!img) return reply.code(404).send({ code: 'NOT_FOUND', message: '图片不存在' });
+    deleteFileSafe(img.image_path);
+    db.prepare('DELETE FROM generation_images WHERE id=?').run(req.params.id);
+    const remaining = db
+      .prepare('SELECT COUNT(*) AS c FROM generation_images WHERE generation_id=?')
+      .get(img.generation_id).c;
+    if (remaining === 0) {
+      db.prepare('DELETE FROM generations WHERE id=?').run(img.generation_id);
+    }
+    return { ok: true };
   });
 }
