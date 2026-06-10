@@ -1,5 +1,6 @@
+import fs from 'node:fs';
 import { db, now, uuid } from '../db.js';
-import { saveGenerationImage } from '../storage.js';
+import { saveGenerationImage, absPath } from '../storage.js';
 import { generateImages } from '../ai/provider.js';
 
 // §6.1 全局串行单任务锁(内存标志, 配合 DB 状态)
@@ -22,17 +23,36 @@ export function getActiveGeneration() {
     .get();
 }
 
-// 组装提示词: 剧本 + 资产名称 + 模版内容
+// 组装提示词: 剧本 + 资产名称 + 模版内容 + 参考图一致性要求
 function buildPrompt({ scriptContent, assets, template }) {
   const lines = [];
   if (template?.content) lines.push(template.content.trim());
   if (scriptContent?.trim()) lines.push(`剧本内容:\n${scriptContent.trim()}`);
-  const persons = assets.filter((a) => a.type === 'person').map((a) => a.name);
-  const props = assets.filter((a) => a.type === 'prop').map((a) => a.name);
-  const backgrounds = assets.filter((a) => a.type === 'background').map((a) => a.name);
-  if (persons.length) lines.push(`人物: ${persons.join('、')}`);
-  if (backgrounds.length) lines.push(`背景: ${backgrounds.join('、')}`);
-  if (props.length) lines.push(`道具: ${props.join('、')}`);
+
+  const persons = assets.filter((a) => a.type === 'person');
+  const props = assets.filter((a) => a.type === 'prop');
+  const backgrounds = assets.filter((a) => a.type === 'background');
+
+  if (persons.length) lines.push(`人物: ${persons.map((a) => a.name).join('、')}`);
+  if (backgrounds.length) lines.push(`背景: ${backgrounds.map((a) => a.name).join('、')}`);
+  if (props.length) lines.push(`道具: ${props.map((a) => a.name).join('、')}`);
+
+  // 针对携带参考图的资产，追加严格一致性要求
+  const withImg = { persons: persons.filter((a) => a.image_path), props: props.filter((a) => a.image_path), backgrounds: backgrounds.filter((a) => a.image_path) };
+  const consistency = [];
+  if (withImg.persons.length) {
+    consistency.push(`参考图中角色（${withImg.persons.map((a) => a.name).join('、')}）的面貌、发型、服装、配饰需严格保持一致，不得随意更改`);
+  }
+  if (withImg.backgrounds.length) {
+    consistency.push(`参考图中的背景场景（${withImg.backgrounds.map((a) => a.name).join('、')}）的环境、光线、风格需严格保持一致`);
+  }
+  if (withImg.props.length) {
+    consistency.push(`参考图中的道具（${withImg.props.map((a) => a.name).join('、')}）的外观、颜色、细节需严格保持一致`);
+  }
+  if (consistency.length) {
+    lines.push(`【参考图一致性要求】\n${consistency.join('；\n')}`);
+  }
+
   return lines.join('\n\n');
 }
 
@@ -66,6 +86,14 @@ export function createGeneration({ shotId, templateId, assetIds }) {
 
   const prompt = buildPrompt({ scriptContent: shot.script_content, assets, template });
 
+  // 将有图片的资产转为 base64 dataURL 作为参考图
+  const refImages = assets
+    .filter((a) => a.image_path)
+    .map((a) => {
+      const buf = fs.readFileSync(absPath(a.image_path));
+      return `data:image/png;base64,${buf.toString('base64')}`;
+    });
+
   // 取得 project_id 用于落盘路径
   const chapter = db.prepare(`SELECT * FROM chapters WHERE id=?`).get(shot.chapter_id);
   const projectId = chapter?.project_id || 'unknown';
@@ -79,19 +107,19 @@ export function createGeneration({ shotId, templateId, assetIds }) {
 
   RUNNING = true;
   // 异步执行, 不阻塞响应
-  runGeneration(id, { projectId, shotId, prompt }).catch((e) => {
+  runGeneration(id, { projectId, shotId, prompt, refImages }).catch((e) => {
     console.error('[generation] unexpected error', e);
   });
 
   return db.prepare(`SELECT * FROM generations WHERE id=?`).get(id);
 }
 
-async function runGeneration(generationId, { projectId, shotId, prompt }) {
+async function runGeneration(generationId, { projectId, shotId, prompt, refImages = [] }) {
   const setProgress = (p) =>
     db.prepare(`UPDATE generations SET progress=?, updated_at=? WHERE id=?`).run(p, now(), generationId);
   try {
     setProgress(20);
-    const images = await generateImages(prompt);
+    const images = await generateImages(prompt, { refImages });
     setProgress(70);
 
     const insertImg = db.prepare(

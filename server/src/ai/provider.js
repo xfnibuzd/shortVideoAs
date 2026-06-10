@@ -5,18 +5,18 @@
 
 export const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
 
-export async function generateImages(prompt) {
+export async function generateImages(prompt, options = {}) {
   switch (AI_PROVIDER) {
     case 'doubao':
     case 'ark': {
       const { generateImages: gen } = await import('./doubao.js');
-      return gen(prompt);
+      return gen(prompt, options);
     }
     case 'gemini':
     case 'google':
     default: {
       const { generateImages: gen } = await import('./gemini.js');
-      return gen(prompt);
+      return gen(prompt, options);
     }
   }
 }
